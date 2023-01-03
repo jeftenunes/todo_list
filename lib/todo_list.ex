@@ -24,7 +24,16 @@ defmodule TodoList do
     |> Enum.map(fn {_, entry} -> {entry.title, entry.description} end)
   end
 
-  def update_at(id, todo_list, entry = %{title: _, description: _, date: _}) do
-    Map.put(todo_list, id, entry)
+  def update_at(todo_list, id, data) do
+    updated_entry = Map.put(data, :id, id)
+
+    case Map.fetch(todo_list.entries, id) do
+      :err ->
+        todo_list
+
+      {:ok, _} ->
+        new_entries = Map.put(todo_list.entries, updated_entry.id, updated_entry)
+        %__MODULE__{todo_list | entries: new_entries}
+    end
   end
 end
