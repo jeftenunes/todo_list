@@ -24,3 +24,5 @@ todo_list-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+.vscode
