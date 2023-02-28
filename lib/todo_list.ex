@@ -16,8 +16,16 @@ defmodule TodoServer do
     send(todo_server, {:add, new_entry})
   end
 
-  def entries(todo_server, date) do
-    send(todo_server, {:entries, self(), date})
+  def update(todo_server, id, %{title: _, description: _, date: _} = data) do
+    send(todo_server, {:update, id, data})
+  end
+
+  def delete(todo_server, id) do
+    send(todo_server, {:delete, id})
+  end
+
+  def entries(todo_server) do
+    send(todo_server, {:entries, self()})
 
     receive do
       {:entries, entries} -> entries
@@ -26,9 +34,26 @@ defmodule TodoServer do
     end
   end
 
-  defp process_message(todo_list, {:entries, caller, date}) do
+  def entries(todo_server, date) do
+    send(todo_server, {:entries_filtered, self(), date})
+
+    receive do
+      {:entries_filtered, entries} -> entries
+    after
+      5000 -> {:err, :timeout}
+    end
+  end
+
+  defp process_message(todo_list, {:entries, caller}) do
     IO.puts("Processing entries message")
-    send(caller, {:entries, TodoList.entries(todo_list, date)})
+    send(caller, {:entries, TodoList.entries(todo_list)})
+
+    todo_list
+  end
+
+  defp process_message(todo_list, {:entries_filtered, caller, date}) do
+    IO.puts("Processing entries message")
+    send(caller, {:entries_filtered, TodoList.entries(todo_list, to_string(date))})
 
     todo_list
   end
@@ -37,7 +62,8 @@ defmodule TodoServer do
     TodoList.add_entry(todo_list, new_entry.title, new_entry.description, new_entry.date)
   end
 
-  defp process_message(todo_list, {:update, id}) do
+  defp process_message(todo_list, {:update, id, data}) do
+    TodoList.update_at(todo_list, id, data)
   end
 
   defp process_message(todo_list, {:delete, id}) do
